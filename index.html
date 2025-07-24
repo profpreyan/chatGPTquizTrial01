@@ -154,7 +154,7 @@
       });
 
       const name = document.getElementById("name").value;
-      fetch("https://c4e1acedc976.ngrok-free.app/webhook/quiz-response", {
+      fetch("https://n8n-v39q.onrender.com/webhook/quiz-response", {
         method: "POST",
         body: JSON.stringify({ name, answers: results, score }),
         headers: { 'Content-Type': 'application/json' }

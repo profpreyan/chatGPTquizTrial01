@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Augmented Architecture Quiz</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #1e1e1e;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    h1 {
+      color: red;
+    }
+    .hidden { display: none; }
+    .btn {
+      background-color: red;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      cursor: pointer;
+      margin: 10px;
+      font-size: 1em;
+    }
+    .quiz-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .dropzone {
+      border: 2px dashed white;
+      border-radius: 8px;
+      padding: 20px;
+      min-width: 200px;
+      text-align: center;
+    }
+    .draggable {
+      background-color: red;
+      color: white;
+      padding: 10px;
+      margin: 10px;
+      border-radius: 5px;
+      cursor: grab;
+    }
+    .timer {
+      font-size: 1.2em;
+      color: red;
+    }
+  </style>
+</head>
+<body>
+  <h1>AI Model Matching Game</h1>
+
+  <div id="intro">
+    <label for="name">Enter your name:</label>
+    <input type="text" id="name" required>
+    <button class="btn" onclick="startQuiz()">Start Quiz</button>
+  </div>
+
+  <div id="quiz" class="hidden">
+    <div class="timer" id="timer">Time Left: 5:00</div>
+    <p>Drag the AI models into the correct categories:</p>
+
+    <div class="quiz-container">
+      <div id="models">
+        <div class="draggable" draggable="true" id="LLM">LLM</div>
+        <div class="draggable" draggable="true" id="Diffusion">Diffusion</div>
+        <div class="draggable" draggable="true" id="Graph">Graph</div>
+        <div class="draggable" draggable="true" id="RAG">RAG</div>
+        <div class="draggable" draggable="true" id="CLIP">CLIP</div>
+      </div>
+      <div>
+        <div class="dropzone" ondrop="drop(event)" ondragover="allowDrop(event)" data-label="Language">Language</div>
+        <div class="dropzone" ondrop="drop(event)" ondragover="allowDrop(event)" data-label="Image">Image</div>
+        <div class="dropzone" ondrop="drop(event)" ondragover="allowDrop(event)" data-label="Graph">Graph</div>
+        <div class="dropzone" ondrop="drop(event)" ondragover="allowDrop(event)" data-label="Memory">Memory</div>
+        <div class="dropzone" ondrop="drop(event)" ondragover="allowDrop(event)" data-label="Image-Text Pair">Image-Text Pair</div>
+      </div>
+    </div>
+    <button class="btn" onclick="submitQuiz()">Submit Answers</button>
+  </div>
+
+  <div id="result" class="hidden"></div>
+
+  <script>
+    let timer;
+    let timeLeft = 300;
+
+    function allowDrop(ev) {
+      ev.preventDefault();
+    }
+
+    function drop(ev) {
+      ev.preventDefault();
+      const data = ev.dataTransfer.getData("text");
+      const node = document.getElementById(data);
+      ev.target.appendChild(node);
+    }
+
+    document.querySelectorAll('.draggable').forEach(el => {
+      el.addEventListener('dragstart', e => e.dataTransfer.setData("text", e.target.id));
+    });
+
+    function startTimer() {
+      timer = setInterval(() => {
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          submitQuiz();
+        } else {
+          timeLeft--;
+          const mins = Math.floor(timeLeft / 60);
+          const secs = timeLeft % 60;
+          document.getElementById("timer").textContent = `Time Left: ${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+      }, 1000);
+    }
+
+    function startQuiz() {
+      const name = document.getElementById("name").value.trim();
+      if (!name) return alert("Please enter your name");
+      document.getElementById("intro").classList.add("hidden");
+      document.getElementById("quiz").classList.remove("hidden");
+      startTimer();
+    }
+
+    function submitQuiz() {
+      clearInterval(timer);
+      const results = {};
+      document.querySelectorAll(".dropzone").forEach(zone => {
+        const label = zone.getAttribute("data-label");
+        const model = zone.querySelector(".draggable")?.id || "None";
+        results[label] = model;
+      });
+
+      const correct = {
+        Language: "LLM",
+        Image: "Diffusion",
+        Graph: "Graph",
+        Memory: "RAG",
+        "Image-Text Pair": "CLIP"
+      };
+
+      let score = 0;
+      Object.keys(correct).forEach(key => {
+        if (correct[key] === results[key]) score++;
+      });
+
+      const name = document.getElementById("name").value;
+      fetch("http://localhost:5678/webhook/quiz-response", {
+        method: "POST",
+        body: JSON.stringify({ name, answers: results, score }),
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      document.getElementById("quiz").classList.add("hidden");
+      document.getElementById("result").classList.remove("hidden");
+      document.getElementById("result").innerHTML = `<h2>Thanks, ${name}!</h2><p>Your Score: ${score}/5</p>`;
+    }
+  </script>
+</body>
+</html>

@@ -154,7 +154,7 @@
       });
 
       const name = document.getElementById("name").value;
-      fetch("http://localhost:5678/webhook/quiz-response", {
+      fetch("https://ab9d1922d050.ngrok-free.app", {
         method: "POST",
         body: JSON.stringify({ name, answers: results, score }),
         headers: { 'Content-Type': 'application/json' }
